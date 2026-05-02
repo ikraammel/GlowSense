@@ -6,6 +6,7 @@ import '../../bloc/dashboard/dashboard_bloc.dart';
 import '../../bloc/dashboard/dashboard_event.dart';
 import '../../bloc/dashboard/dashboard_state.dart';
 import '../../constants/colors.dart';
+import '../../data/models/skin_analysis_model.dart';
 import '../analysis/analysis_screen.dart';
 import '../products/product_scan_screen.dart';
 
@@ -24,13 +25,17 @@ class _DashboardTabState extends State<DashboardTab> {
   @override
   Widget build(BuildContext context) {
     final authState = context.watch<AuthBloc>().state;
-    final userName = authState is AuthAuthenticated ? authState.user.firstName : 'à toi';
+    final userName = authState is AuthAuthenticated 
+        ? (authState.user.onboardingName ?? authState.user.firstName) 
+        : 'à toi';
 
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
         child: BlocBuilder<DashboardBloc, DashboardState>(
           builder: (context, state) {
+            final lastAnalysis = state is DashboardLoaded ? state.data.lastAnalysis : null;
+
             return RefreshIndicator(
               color: AppColors.primaryPink,
               onRefresh: () async => context.read<DashboardBloc>().add(const LoadDashboard()),
@@ -47,11 +52,19 @@ class _DashboardTabState extends State<DashboardTab> {
 
                     // Skin Health Card
                     if (state is DashboardLoaded)
-                      _buildSkinHealthCard(state.data.lastAnalysis?.overallScore ?? 0)
+                      _buildSkinHealthCard(lastAnalysis)
                     else if (state is DashboardLoading)
                       _buildLoadingCard()
                     else
-                      _buildSkinHealthCard(0),
+                      _buildSkinHealthCard(null),
+
+                    // ✅ Section Analyse détaillée (Problèmes détectés par l'IA)
+                    if (lastAnalysis != null && lastAnalysis.detectedProblems.isNotEmpty) ...[
+                      const SizedBox(height: 30),
+                      const Text("Analyse de la peau", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textDark)),
+                      const SizedBox(height: 16),
+                      _buildProblemsList(lastAnalysis.detectedProblems),
+                    ],
 
                     const SizedBox(height: 30),
                     const Text("Actions Rapides", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textDark)),
@@ -65,7 +78,7 @@ class _DashboardTabState extends State<DashboardTab> {
                           Icons.camera_alt_rounded,
                           "Scanner Peau",
                           "Analyser maintenant",
-                          const Color(0xFFFCE4EC), // Light Pink
+                          const Color(0xFFFCE4EC),
                           const AnalysisScreen(),
                         ),
                         const SizedBox(width: 15),
@@ -74,7 +87,7 @@ class _DashboardTabState extends State<DashboardTab> {
                           Icons.qr_code_scanner_rounded,
                           "Scanner Produit",
                           "Vérifier la sécurité",
-                          const Color(0xFFE3F2FD), // Light Blue
+                          const Color(0xFFE3F2FD),
                           const ProductScanScreen(),
                         ),
                       ],
@@ -88,7 +101,7 @@ class _DashboardTabState extends State<DashboardTab> {
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE8F5E9), // Light Green
+                        color: const Color(0xFFE8F5E9),
                         borderRadius: BorderRadius.circular(24),
                       ),
                       child: const Row(
@@ -122,7 +135,10 @@ class _DashboardTabState extends State<DashboardTab> {
     );
   }
 
-  Widget _buildSkinHealthCard(int score) {
+  Widget _buildSkinHealthCard(SkinAnalysisModel? lastAnalysis) {
+    final score = lastAnalysis?.overallScore ?? 0;
+    final skinType = lastAnalysis?.skinTypeLabel ?? "Non analysé";
+
     String message = "Commencez votre première analyse !";
     if (score >= 80) message = "Excellents progrès ! Votre peau est en bonne santé.";
     else if (score >= 50) message = "Bel effort ! Suivez votre routine pour de meilleurs résultats.";
@@ -141,25 +157,68 @@ class _DashboardTabState extends State<DashboardTab> {
           ),
         ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text("Santé de votre peau", style: TextStyle(fontSize: 14, color: Colors.white70)),
-                const SizedBox(height: 4),
-                Text("$score%", style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.white)),
-                const SizedBox(height: 12),
-                Text(message, style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.4)),
-              ],
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text("Santé de votre peau", style: TextStyle(fontSize: 14, color: Colors.white70)),
+                  const SizedBox(height: 4),
+                  Text("$score%", style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.white)),
+                ],
+              ),
+              const Icon(Icons.auto_awesome, size: 50, color: Colors.white24),
+            ],
           ),
-          const Icon(Icons.auto_awesome, size: 60, color: Colors.white24),
+          const SizedBox(height: 12),
+          Text(skinType, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 16)),
+          const SizedBox(height: 4),
+          Text(message, style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.4)),
         ],
       ),
     );
+  }
+
+  Widget _buildProblemsList(List<SkinProblemModel> problems) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.grey.shade100),
+      ),
+      child: Column(
+        children: problems.map((p) => Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Row(
+            children: [
+              Icon(Icons.check_circle_outline, color: _getSeverityColor(p.severity), size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  "${p.typeLabel} : ${p.severityLabel}",
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: AppColors.textDark),
+                ),
+              ),
+            ],
+          ),
+        )).toList(),
+      ),
+    );
+  }
+
+  Color _getSeverityColor(String severity) {
+    switch (severity.toLowerCase()) {
+      case 'high': return AppColors.error;
+      case 'medium': return AppColors.warning;
+      case 'low': return AppColors.success;
+      default: return AppColors.textGrey;
+    }
   }
 
   Widget _buildLoadingCard() {

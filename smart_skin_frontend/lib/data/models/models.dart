@@ -164,6 +164,21 @@ class SkinAnalysisResult {
       );
 
   String get skinTypeLabel {
+    if (detectedSkinType == null ||
+        detectedSkinType == 'INCONNU' ||
+        detectedSkinType == 'UNKNOWN') {
+
+      // fallback basé sur IA
+      if (analysisDescription?.contains('acne') == true) {
+        return 'Peau acnéique';
+      }
+      if (analysisDescription?.contains('dark spots') == true) {
+        return 'Peau à taches pigmentaires';
+      }
+
+      return 'Non déterminé';
+    }
+
     const labels = {
       'NORMAL': 'Normale',
       'SEC': 'Sèche',
@@ -172,9 +187,9 @@ class SkinAnalysisResult {
       'SENSIBLE': 'Sensible',
       'ACNEIQUE': 'Acnéique',
       'MATURE': 'Mature',
-      'INCONNU': 'Non déterminé',
     };
-    return labels[detectedSkinType] ?? detectedSkinType ?? '';
+
+    return labels[detectedSkinType] ?? detectedSkinType!;
   }
 }
 

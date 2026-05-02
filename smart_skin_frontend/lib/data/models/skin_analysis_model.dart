@@ -14,6 +14,26 @@ class SkinProblemModel {
         severity: json['severity']?.toString() ?? '',
         description: json['description']?.toString() ?? '',
       );
+
+  String get typeLabel {
+    const labels = {
+      'acne': 'Acné',
+      'dark spots': 'Taches pigmentaires',
+      'wrinkles': 'Rides',
+      'pores': 'Pores dilatés',
+      'blackheads': 'Points noirs',
+    };
+    return labels[name.toLowerCase()] ?? name;
+  }
+
+  String get severityLabel {
+    const labels = {
+      'low': 'Légère',
+      'medium': 'Modérée',
+      'high': 'Sévère',
+    };
+    return labels[severity.toLowerCase()] ?? severity;
+  }
 }
 
 class RecommendationModel {
@@ -109,6 +129,18 @@ class SkinAnalysisModel {
             : {},
         modelWasAvailable: json['modelWasAvailable'],
       );
+
+  String get skinTypeLabel {
+    const types = {
+      'SEC': 'Peau Sèche',
+      'GRAS': 'Peau Grasse',
+      'MIXTE': 'Peau Mixte',
+      'NORMAL': 'Peau Normale',
+      'SENSIBLE': 'Peau Sensible',
+      'INCONNU': 'Peau Sensible',
+    };
+    return types[detectedSkinType.toUpperCase()] ?? detectedSkinType;
+  }
 }
 
 class ScorePointModel {

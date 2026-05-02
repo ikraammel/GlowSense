@@ -56,20 +56,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (_newAvatar != null) {
         await api.uploadAvatar(_newAvatar!.path);
       }
-      // On n'envoie plus l'email car il est en lecture seule
       await api.updateProfile({
         'firstName': _firstCtrl.text.trim(),
         'lastName': _lastCtrl.text.trim(),
       });
-      
+
       if (!mounted) return;
-      
+
       context.read<AuthBloc>().add(const CheckAuthStatus());
       setState(() {
         _isEditing = false;
         _newAvatar = null;
       });
-      
+
       messengerKey.currentState?.showSnackBar(const SnackBar(
         content: Text("Profil mis à jour !"),
         backgroundColor: AppColors.success,
@@ -138,12 +137,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           return BlocBuilder<DashboardBloc, DashboardState>(
             builder: (ctx, dashState) {
               final dashData = dashState is DashboardLoaded ? dashState.data : null;
-              
+
               return CustomScrollView(
                 slivers: [
                   _buildAppBar(),
                   SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
                     sliver: SliverList(
                       delegate: SliverChildListDelegate([
                         if (user != null && user.deletionRequestedAt != null)
@@ -152,7 +151,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         const SizedBox(height: 24),
                         _buildStatsRow(dashData),
                         const SizedBox(height: 32),
-                        if (_isEditing) 
+                        if (_isEditing)
                           _buildEditForm()
                         else ...[
                           _buildSectionTitle("Profil de peau"),
@@ -173,7 +172,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           const SizedBox(height: 40),
                           _buildSignOutButton(),
                         ],
-                        const SizedBox(height: 100),
+                        const SizedBox(height: 24),
                       ]),
                     ),
                   ),
@@ -227,21 +226,118 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildAppBar() {
     return SliverAppBar(
-      expandedHeight: 120,
+      expandedHeight: 80,
       pinned: true,
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.transparent,
       elevation: 0,
+      centerTitle: true,
       flexibleSpace: FlexibleSpaceBar(
-        title: Text(_isEditing ? "Modifier le profil" : "Profil", 
-          style: const TextStyle(color: AppColors.textDark, fontWeight: FontWeight.bold, fontSize: 18)),
+        background: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.white,
+                AppColors.backgroundLight.withOpacity(0.95),
+              ],
+              stops: const [0.7, 1.0],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+        ),
+        title: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          child: Container(
+            key: ValueKey(_isEditing),
+            padding: const EdgeInsets.symmetric(horizontal: 40),
+            child: Text(
+              _isEditing ? "Modifier le profil" : "Mon profil",
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppColors.textDark,
+                fontWeight: FontWeight.w600,
+                fontSize: 17,
+                letterSpacing: -0.3,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ),
         centerTitle: true,
+        titlePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
       actions: [
-        IconButton(
-          icon: Icon(_isEditing ? Icons.close : Icons.edit_outlined, color: AppColors.primaryPink),
-          onPressed: () => setState(() => _isEditing = !_isEditing),
+        Container(
+          margin: const EdgeInsets.only(right: 16, top: 8, bottom: 8),
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(30),
+            child: InkWell(
+              onTap: () => setState(() => _isEditing = !_isEditing),
+              borderRadius: BorderRadius.circular(30),
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: _isEditing
+                      ? AppColors.error.withOpacity(0.15)
+                      : AppColors.primaryPink.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: _isEditing
+                        ? AppColors.error.withOpacity(0.3)
+                        : AppColors.primaryPink.withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: Icon(
+                    _isEditing ? Icons.close : Icons.edit_outlined,
+                    key: ValueKey(_isEditing),
+                    color: _isEditing ? AppColors.error : AppColors.primaryPink,
+                    size: 20,
+                  ),
+                ),
+              ),
+            ),
+          ),
         ),
       ],
+      leading: Container(
+        margin: const EdgeInsets.only(left: 16, top: 8, bottom: 8),
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(30),
+          child: InkWell(
+            onTap: () => Navigator.pop(context),
+            borderRadius: BorderRadius.circular(30),
+            child: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.grey.withOpacity(0.1),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.grey.withOpacity(0.2),
+                  width: 1,
+                ),
+              ),
+              child: const Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: AppColors.textGrey,
+                size: 18,
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -249,11 +345,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Column(
       children: [
         _buildAvatar(user),
-        const SizedBox(height: 16),
-        Text(user?.fullName ?? "Utilisateur", 
-          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textDark)),
-        Text(user?.email ?? "email@exemple.com", 
-          style: const TextStyle(fontSize: 14, color: AppColors.textGrey)),
+        const SizedBox(height: 20),
+        Text(
+          user?.fullName ?? "Utilisateur",
+          style: const TextStyle(
+            fontSize: 26,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textDark,
+            letterSpacing: -0.5,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+          decoration: BoxDecoration(
+            color: AppColors.primaryPink.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.email, size: 14, color: AppColors.primaryPink),
+              const SizedBox(width: 6),
+              Text(
+                user?.email ?? "email@exemple.com",
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AppColors.primaryPink,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -263,32 +387,84 @@ class _ProfileScreenState extends State<ProfileScreen> {
       children: [
         Container(
           padding: const EdgeInsets.all(4),
-          decoration: const BoxDecoration(shape: BoxShape.circle, gradient: AppColors.primaryGradient),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: const LinearGradient(
+              colors: [AppColors.primaryPink, AppColors.deepPink],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primaryPink.withOpacity(0.3),
+                blurRadius: 15,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
           child: CircleAvatar(
-            radius: 50,
+            radius: 55,
             backgroundColor: Colors.white,
-            child: _newAvatar != null
-                ? ClipOval(child: Image.file(_newAvatar!, width: 100, height: 100, fit: BoxFit.cover))
-                : user?.profileImageUrl != null
-                    ? ClipOval(child: Image.network(user!.profileImageUrl!, 
-                        width: 100, height: 100, fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const Icon(Icons.person, size: 50, color: AppColors.deepPink)))
-                    : const Icon(Icons.person, size: 50, color: AppColors.deepPink),
+            child: ClipOval(
+              child: _newAvatar != null
+                  ? Image.file(
+                _newAvatar!,
+                width: 110,
+                height: 110,
+                fit: BoxFit.cover,
+              )
+                  : user?.profileImageUrl != null
+                  ? Image.network(
+                user!.profileImageUrl!,
+                width: 110,
+                height: 110,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  color: AppColors.primaryPink.withOpacity(0.1),
+                  child: const Icon(
+                    Icons.person,
+                    size: 55,
+                    color: AppColors.deepPink,
+                  ),
+                ),
+              )
+                  : Container(
+                color: AppColors.primaryPink.withOpacity(0.1),
+                child: const Icon(
+                  Icons.person,
+                  size: 55,
+                  color: AppColors.deepPink,
+                ),
+              ),
+            ),
           ),
         ),
         if (_isEditing)
           Positioned(
-            bottom: 0, right: 0,
+            bottom: 5,
+            right: 5,
             child: GestureDetector(
               onTap: () async {
                 final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
                 if (picked != null) setState(() => _newAvatar = File(picked.path));
               },
               child: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: const BoxDecoration(color: AppColors.primaryPink, shape: BoxShape.circle,
-                  boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)]),
-                child: const Icon(Icons.camera_alt, size: 18, color: Colors.white),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [AppColors.primaryPink, AppColors.deepPink],
+                  ),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    const BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 6,
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.camera_alt,
+                  size: 18,
+                  color: Colors.white,
+                ),
               ),
             ),
           ),
@@ -338,18 +514,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       child: Column(
         children: [
+          _profileRow(Icons.cake_outlined, "Âge", "${user?.age ?? "Non défini"} ans"),
+          const Divider(height: 24, thickness: 0.5),
           _profileRow(Icons.opacity, "Type de peau", user?.skinType ?? "Non défini"),
           const Divider(height: 24, thickness: 0.5),
-          _profileRow(Icons.track_changes, "Préoccupations", user?.skinConcerns ?? "Non défini"),
+          _profileRow(Icons.track_changes, "Préoccupations", _formatConcerns(user?.skinConcerns)),
           const Divider(height: 24, thickness: 0.5),
-          _profileRow(Icons.wb_sunny_outlined, "Exposition Soleil", "Modérée"),
+          _profileRow(Icons.wb_sunny_outlined, "Exposition Soleil", user?.sunExposure ?? "Non défini"),
           const Divider(height: 24, thickness: 0.5),
-          _profileRow(Icons.speed, "Niveau d'effort", "Moyen"),
+          _profileRow(Icons.speed, "Niveau d'effort", user?.effortLevel ?? "Non défini"),
           const Divider(height: 24, thickness: 0.5),
-          _profileRow(Icons.auto_awesome, "Préférence Routine", "Naturelle"),
+          _profileRow(Icons.auto_awesome, "Préférence Routine", user?.routinePreference ?? "Non défini"),
+          const Divider(height: 24, thickness: 0.5),
+          _profileRow(Icons.science_outlined, "Ingrédients à éviter", _formatIngredients(user?.ingredientsToAvoid)),
+          const Divider(height: 24, thickness: 0.5),
+          _profileRow(Icons.emoji_emotions_outlined, "Bénéfices souhaités", _formatBenefits(user?.desiredBenefits)),
         ],
       ),
     );
+  }
+
+  String _formatConcerns(String? concerns) {
+    if (concerns == null || concerns.isEmpty) return "Non défini";
+    final list = concerns.split(',');
+    if (list.length > 3) return "${list.take(3).join(', ')}...";
+    return concerns.replaceAll(',', ', ');
+  }
+
+  String _formatIngredients(String? ingredients) {
+    if (ingredients == null || ingredients.isEmpty) return "Aucun";
+    return ingredients.replaceAll(',', ', ');
+  }
+
+  String _formatBenefits(String? benefits) {
+    if (benefits == null || benefits.isEmpty) return "Non défini";
+    return benefits.replaceAll(',', ', ');
   }
 
   Widget _profileRow(IconData icon, String label, String value) {
@@ -422,10 +621,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Column(
         children: [
           if (isDeleting)
-            _settingTile(Icons.undo_rounded, "Annuler la suppression", "Récupérer votre compte", 
+            _settingTile(Icons.undo_rounded, "Annuler la suppression", "Récupérer votre compte",
               _cancelDeletion, color: Colors.orange)
           else
-            _settingTile(Icons.delete_forever_rounded, "Supprimer le compte", "Suppression définitive", 
+            _settingTile(Icons.delete_forever_rounded, "Supprimer le compte", "Suppression définitive",
               _showDeleteConfirmation, color: AppColors.error),
         ],
       ),
@@ -463,33 +662,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildEditForm() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15)]),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _editField(_firstCtrl, "Prénom", Icons.person_outline),
-          const SizedBox(height: 16),
-          _editField(_lastCtrl, "Nom", Icons.person_outline),
-          const SizedBox(height: 16),
-          _editField(_emailCtrl, "E-mail", Icons.email_outlined, type: TextInputType.emailAddress, readOnly: true),
-          const SizedBox(height: 32),
-          SizedBox(
-            width: double.infinity, height: 55,
-            child: ElevatedButton(
-              onPressed: _isLoading ? null : _saveProfile,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryPink, foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    return SingleChildScrollView(
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15)]),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _editField(_firstCtrl, "Prénom", Icons.person_outline),
+            const SizedBox(height: 16),
+            _editField(_lastCtrl, "Nom", Icons.person_outline),
+            const SizedBox(height: 16),
+            _editField(_emailCtrl, "E-mail", Icons.email_outlined, type: TextInputType.emailAddress, readOnly: true),
+            const SizedBox(height: 32),
+            SizedBox(
+              width: double.infinity, height: 55,
+              child: ElevatedButton(
+                onPressed: _isLoading ? null : _saveProfile,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryPink, foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                child: _isLoading
+                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : const Text("Mettre à jour", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               ),
-              child: _isLoading
-                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : const Text("Mettre à jour", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -504,7 +705,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         labelText: hint,
         prefixIcon: Icon(icon, color: readOnly ? Colors.grey : AppColors.primaryPink),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
-        filled: true, 
+        filled: true,
         fillColor: readOnly ? Colors.grey.shade100 : Colors.grey.shade50,
       ),
     );
@@ -588,31 +789,33 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
     return AlertDialog(
       title: const Text("Changer le mot de passe"),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            controller: _oldCtrl, obscureText: !_oldVisible,
-            decoration: InputDecoration(
-              hintText: "Mot de passe actuel",
-              suffixIcon: IconButton(
-                icon: Icon(_oldVisible ? Icons.visibility : Icons.visibility_off),
-                onPressed: () => setState(() => _oldVisible = !_oldVisible),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: _oldCtrl, obscureText: !_oldVisible,
+              decoration: InputDecoration(
+                hintText: "Mot de passe actuel",
+                suffixIcon: IconButton(
+                  icon: Icon(_oldVisible ? Icons.visibility : Icons.visibility_off),
+                  onPressed: () => setState(() => _oldVisible = !_oldVisible),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _newCtrl, obscureText: !_newVisible,
-            decoration: InputDecoration(
-              hintText: "Nouveau (min 8 caractères)",
-              suffixIcon: IconButton(
-                icon: Icon(_newVisible ? Icons.visibility : Icons.visibility_off),
-                onPressed: () => setState(() => _newVisible = !_newVisible),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _newCtrl, obscureText: !_newVisible,
+              decoration: InputDecoration(
+                hintText: "Nouveau (min 8 caractères)",
+                suffixIcon: IconButton(
+                  icon: Icon(_newVisible ? Icons.visibility : Icons.visibility_off),
+                  onPressed: () => setState(() => _newVisible = !_newVisible),
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
       actions: [
         TextButton(onPressed: () => Navigator.pop(context), child: const Text("Annuler")),
@@ -654,7 +857,7 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
             }
           },
           style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryPink),
-          child: _loading 
+          child: _loading
             ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
             : const Text("Changer", style: TextStyle(color: Colors.white)),
         ),

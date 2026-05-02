@@ -10,6 +10,20 @@ class UserModel {
   final bool onboardingCompleted;
   final bool notificationsEnabled;
   
+  // Champs Onboarding
+  final String? onboardingName; // Le nom choisi au début du questionnaire
+  final int? age;
+  final String? gender;
+  final String? ethnicity;
+  final String? skinSensitivity;
+  final String? tirednessLevel;
+  final String? stressLevel;
+  final String? sunExposure;
+  final String? routinePreference;
+  final String? ingredientsToAvoid;
+  final String? effortLevel;
+  final String? desiredBenefits;
+
   // Settings - Email
   final bool emailWeeklyDigest;
   final bool emailAnalysisResults;
@@ -44,6 +58,18 @@ class UserModel {
     this.skinConcerns,
     this.onboardingCompleted = false,
     this.notificationsEnabled = true,
+    this.onboardingName,
+    this.age,
+    this.gender,
+    this.ethnicity,
+    this.skinSensitivity,
+    this.tirednessLevel,
+    this.stressLevel,
+    this.sunExposure,
+    this.routinePreference,
+    this.ingredientsToAvoid,
+    this.effortLevel,
+    this.desiredBenefits,
     this.emailWeeklyDigest = true,
     this.emailAnalysisResults = true,
     this.emailSkincareTips = true,
@@ -75,6 +101,18 @@ class UserModel {
     skinConcerns: json['skinConcerns'],
     onboardingCompleted: json['onboardingCompleted'] ?? false,
     notificationsEnabled: json['notificationsEnabled'] ?? true,
+    onboardingName: json['onboardingName'] ?? json['name'],
+    age: json['age'] is int ? json['age'] : int.tryParse(json['age']?.toString() ?? ''),
+    gender: json['gender'],
+    ethnicity: json['ethnicity'],
+    skinSensitivity: json['skinSensitivity'],
+    tirednessLevel: json['tirednessLevel'],
+    stressLevel: json['stressLevel'],
+    sunExposure: json['sunExposure'],
+    routinePreference: json['routinePreference'],
+    ingredientsToAvoid: json['ingredientsToAvoid'],
+    effortLevel: json['effortLevel'],
+    desiredBenefits: json['desiredBenefits'],
     emailWeeklyDigest: json['emailWeeklyDigest'] ?? true,
     emailAnalysisResults: json['emailAnalysisResults'] ?? true,
     emailSkincareTips: json['emailSkincareTips'] ?? true,
@@ -101,13 +139,24 @@ class UserModel {
 class AuthResponse {
   final String accessToken;
   final String refreshToken;
+  final String tokenType;
   final UserModel user;
 
-  AuthResponse({required this.accessToken, required this.refreshToken, required this.user});
+  AuthResponse({
+    required this.accessToken,
+    required this.refreshToken,
+    required this.tokenType,
+    required this.user,
+  });
 
-  factory AuthResponse.fromJson(Map<String, dynamic> json) => AuthResponse(
-    accessToken: json['accessToken'] ?? '',
-    refreshToken: json['refreshToken'] ?? '',
-    user: UserModel.fromJson(json['user'] ?? {}),
-  );
+  factory AuthResponse.fromJson(Map<String, dynamic> json) {
+    final data = json['data'] ?? json;
+
+    return AuthResponse(
+      accessToken: data['accessToken'] ?? '',
+      refreshToken: data['refreshToken'] ?? '',
+      tokenType: data['tokenType'] ?? 'Bearer',
+      user: UserModel.fromJson(data['user'] ?? {}),
+    );
+  }
 }

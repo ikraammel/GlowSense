@@ -5,6 +5,8 @@ import 'dart:io';
 import '../../bloc/analysis/analysis_bloc.dart';
 import '../../bloc/analysis/analysis_event.dart';
 import '../../bloc/analysis/analysis_state.dart';
+import '../../bloc/dashboard/dashboard_bloc.dart';
+import '../../bloc/dashboard/dashboard_event.dart';
 import '../../constants/colors.dart';
 import '../../data/models/skin_analysis_model.dart';
 import 'live_camera_screen.dart';
@@ -52,6 +54,10 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
             ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
               content: Text(state.message), backgroundColor: AppColors.error, behavior: SnackBarBehavior.floating,
             ));
+          }
+          // Rafraîchir le Dashboard dès que l'analyse est terminée
+          if (state is AnalysisDone) {
+            context.read<DashboardBloc>().add(const LoadDashboard());
           }
         },
         builder: (ctx, state) {
@@ -225,7 +231,6 @@ class _ResultView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final score = result.overallScore ?? 0;
-    final scoreColor = score >= 70 ? AppColors.success : score >= 40 ? AppColors.warning : AppColors.error;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
@@ -253,7 +258,7 @@ class _ResultView extends StatelessWidget {
                     children: [
                       const Text("Skin Score", style: TextStyle(color: Colors.white70, fontSize: 14)),
                       Text(score.toString(), style: const TextStyle(fontSize: 42, fontWeight: FontWeight.bold, color: Colors.white)),
-                      Text(result.detectedSkinType, style: const TextStyle(color: Colors.white70)),
+                      Text(result.skinTypeLabel, style: const TextStyle(color: Colors.white70)),
                     ],
                   ),
                 ),
@@ -355,6 +360,7 @@ class _ResultView extends StatelessWidget {
             ),
           ],
 
+          const SizedBox(height: 20),
           if (result.analysisDescription.isNotEmpty) ...[
             const SizedBox(height: 20),
             const Text("Analysis", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
