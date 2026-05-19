@@ -256,6 +256,47 @@ class ApiService {
     } on DioException catch (e) { throw _error(e); }
   }
 
+  Future<List<Map<String, dynamic>>> getPharmaRecommendations({
+    required String skinType,
+    required String problem,
+  }) async {
+    try {
+      final res = await Dio(BaseOptions(
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 20),
+      )).get(
+        AppConstants.pharmaRecommendationsUrl,
+        queryParameters: {
+          'skin_type': skinType,
+          'problem': problem,
+        },
+      );
+
+      final data = res.data;
+      final products = data is List
+          ? data
+          : data is Map
+              ? (data['recommendations'] ??
+                  data['products'] ??
+                  data['data'] ??
+                  data['result'])
+              : null;
+
+      if (products is List) {
+        return products
+            .whereType<Map>()
+            .map((item) => item.map(
+                  (key, value) => MapEntry(key.toString(), value),
+                ))
+            .toList();
+      }
+
+      return [];
+    } on DioException catch (e) {
+      throw _error(e);
+    }
+  }
+
   Future<List<ProductScanModel>> getProductHistory({int page = 0, int size = 10}) async {
     try {
       final res = await _dio.get('/products/history', queryParameters: {'page': page, 'size': size});

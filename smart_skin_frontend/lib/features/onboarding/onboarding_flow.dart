@@ -14,7 +14,7 @@ class OnboardingFlow extends StatefulWidget {
 class _OnboardingFlowState extends State<OnboardingFlow> {
   final _pageCtrl = PageController();
   int _currentPage = 0;
-  static const int _totalPages = 10;
+  static const int _totalPages = 9;
   bool _isLoading = false;
   bool _showWelcome = false;
 
@@ -41,8 +41,6 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
   String? _sunExposure;
 
   // ── Étape 7 : Préférence de routine ─────────────────────────────────────────
-  String? _routinePreference;
-
   // ── Étape 8 : Ingrédients à éviter ─────────────────────────────────────────
   final List<String> _ingredientsToAvoid = [];
 
@@ -92,7 +90,6 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
         'tirednessLevel': _tiredness ?? '',
         'stressLevel': _stress ?? '',
         'sunExposure': _sunExposure ?? '', // On envoie la valeur brute en français
-        'routinePreference': _routinePreference ?? '', // On envoie la valeur brute en français
         'ingredientsToAvoid': _ingredientsToAvoid.join(','),
         'effortLevel': _effortLevel ?? '', // On envoie la valeur brute en français
         'desiredBenefits': _benefits.join(','),
@@ -139,7 +136,6 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
                   _buildConcernsPage(),
                   _buildSkinTodayPage(),
                   _buildSunExposurePage(),
-                  _buildRoutinePrefPage(),
                   _buildIngredientsPage(),
                   _buildEffortPage(),
                   _buildBenefitsPage(),
@@ -419,10 +415,6 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
 
   Widget _buildSunExposurePage() {
     return _buildRadioListPage(title: 'Exposition au soleil', subtitle: 'Combien de temps passez-vous au soleil ?', options: ['Rarement', 'Un peu', 'Souvent', 'Pas sûr'], selected: _sunExposure, onSelect: (v) => setState(() => _sunExposure = v));
-  }
-
-  Widget _buildRoutinePrefPage() {
-    return _buildRadioListPage(title: 'Préférence routine', subtitle: 'Quel type de produits préférez-vous ?', options: ['Produits courants', 'Naturels', 'Qualité médicale'], selected: _routinePreference, onSelect: (v) => setState(() => _routinePreference = v));
   }
 
   Widget _buildIngredientsPage() {
